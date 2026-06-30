@@ -3,6 +3,12 @@ const jwt = require('jsonwebtoken');
 const pool = require('../database/db');
 require('dotenv').config();
 
+// In-memory token blacklist (untuk produksi, gunakan Redis atau tabel DB)
+const tokenBlacklist = new Set();
+
+// Getter agar bisa diakses dari middleware
+const getTokenBlacklist = () => tokenBlacklist;
+
 // Register
 const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -88,4 +94,22 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// Logout
+const logout = (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Token tidak ditemukan.' });
+  }
+
+  // Masukkan token ke blacklist agar tidak bisa digunakan lagi
+  tokenBlacklist.add(token);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Logout berhasil. Token telah dicabut.'
+  });
+};
+
+module.exports = { register, login, logout, getTokenBlacklist };

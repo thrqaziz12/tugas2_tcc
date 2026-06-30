@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getTokenBlacklist } = require('../controllers/authController');
 require('dotenv').config();
 
 const verifyToken = (req, res, next) => {
@@ -7,6 +8,12 @@ const verifyToken = (req, res, next) => {
 
   if (!token) {
     return res.status(401).json({ success: false, message: 'Akses ditolak. Token tidak ditemukan.' });
+  }
+
+  // Cek apakah token sudah di-blacklist (sudah logout)
+  const blacklist = getTokenBlacklist();
+  if (blacklist.has(token)) {
+    return res.status(401).json({ success: false, message: 'Token sudah tidak valid. Silakan login kembali.' });
   }
 
   try {
